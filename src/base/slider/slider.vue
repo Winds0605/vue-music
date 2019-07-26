@@ -53,7 +53,6 @@ export default {
       if (!this.slider) {
         return;
       }
-      console.log(this.slider)
       this._setSliderWidth(true);
       this.slider.refresh();
     });

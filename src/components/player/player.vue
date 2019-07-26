@@ -138,7 +138,6 @@ export default {
   },
   created() {
     this.touch = {};
-    console.log(this.currentSong);
   },
   // https://y.gtimg.cn/music/photo_new/T002R300x300M000004AAnu71BDSIS.jpg?max_age=2592000
   // https://y.gtimg.cn/music/photo_new/T002R300x300M000undefined.jpg?max_age=259200
@@ -324,12 +323,10 @@ export default {
       } else {
         list = this.sequenceList;
       }
-      console.log(list);
       this.resetCurrentIndex(list);
       this.setPlaylist(list);
     },
     resetCurrentIndex(list) {
-      console.log(list);
       let { keys, values, entries } = Object;
       let arr = [];
       for (let key of values(list)) {
@@ -338,7 +335,6 @@ export default {
       let index = arr.findIndex(item => {
         return item.id === this.currentSong.id;
       });
-      console.log(index);
       this.setCurrentIndex(index);
     },
     _pad(num, n = 2) {
@@ -381,6 +377,10 @@ export default {
           this.currentLyric = new Lyric(lyric, this.handleLyric);
           if (this.playing) {
             this.currentLyric.play();
+            setTimeout(() => {
+              this.currentLyric.seek(this.$refs.audio.currentTime * 1000);
+              console.log("lyric reset");
+            }, 500);
           }
         })
         .catch(() => {
@@ -388,10 +388,6 @@ export default {
           this.playingLyric = "";
           this.currentLineNum = 0;
         });
-      setTimeout(() => {
-        this.currentLyric.seek(this.currentTime * 1000);
-        console.log("reset");
-      }, 500);
     },
     handleLyric({ lineNum, txt }) {
       this.currentLineNum = lineNum;

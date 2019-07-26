@@ -55,7 +55,6 @@ export async function createSong(musicData) {
 
 export async function createSongTwo(musicData) {
   let bacUrl = {}
-  console.log(musicData)
   await getSongUrl(musicData.mid).then((res) => {
     bacUrl = res
   })
@@ -73,7 +72,7 @@ export async function createSongTwo(musicData) {
   })
 }
 
-function filterSinger(singer) {
+export function filterSinger(singer) {
   let ret = []
   if (!singer) {
     return ''

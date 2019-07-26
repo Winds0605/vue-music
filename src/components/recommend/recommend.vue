@@ -81,7 +81,6 @@ export default {
     },
     loadImage() {
       if (!this.checkLoaded) {
-        console.log(this.$refs.scroll);
         this.$refs.scroll.refresh();
         this.checkLoaded = true;
       }

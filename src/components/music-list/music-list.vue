@@ -24,7 +24,7 @@
       @scroll="scroll"
     >
       <div class="song-list-wrapper">
-        <song-list :songs="songs" @select="selectItem"></song-list>
+        <song-list :rank="rank" :songs="songs" @select="selectItem"></song-list>
       </div>
       <div class="loading-container" v-show="!songs.length">
         <Loading></Loading>
@@ -64,6 +64,10 @@ export default {
     title: {
       type: String,
       default: ""
+    },
+    rank: {
+      type: Boolean,
+      default: false
     }
   },
   computed: {
@@ -138,7 +142,6 @@ export default {
   created() {
     this.probeType = 3;
     this.listenScroll = true;
-    console.log(this.songs);
   }
 };
 </script>

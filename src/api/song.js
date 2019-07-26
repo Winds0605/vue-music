@@ -1,21 +1,22 @@
 import axios from 'axios'
 import $ from 'jquery'
-import { commonParams } from './config'
+import { commonParams, url } from './config'
 
+// 获取歌曲链接
 export function getSongUrl(songmid) {
-  const url = 'http://47.102.110.34:3000/song'
+  const _url = `${url}/song`
   let body = {
     "songmid": songmid
   }
-  let data = $.get(url, body)
+  let data = $.post(_url, body)
   return data
 }
 
-
+//获取歌词 
 export function getLyric(mid) {
-  const url = 'http://47.102.110.34:3000/api/lyric'
+  const _url = `${url}/lyric`
   const data = Object.assign({}, commonParams, {
-    songmid:mid,
+    songmid: mid,
     pcachetime: '1561273619175',
     platform: 'yqq.json',
     hostUin: 0,
@@ -24,7 +25,7 @@ export function getLyric(mid) {
     format: 'json'
   })
 
-  return axios.get(url, {
+  return axios.get(_url, {
     params: data
   }).then((res) => {
     return Promise.resolve(res.data)

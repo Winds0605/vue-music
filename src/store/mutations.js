@@ -16,10 +16,10 @@ const mutations = {
     // 1.Object.assign({},list)
     // 2.JSON.parse(JSON.stringify(list))
     // 不建议使用第二种方法 性能差
-    state.playlist = Object.assign({}, list)
+    state.playlist = Object.assign([], list)
   },
   [types.SET_SEQUENCE_LIST](state, list) {
-    state.sequenceList = Object.assign({}, list)
+    state.sequenceList = Object.assign([], list)
   },
   [types.SET_PLAY_MODE](state, mode) {
     state.mode = mode
@@ -29,6 +29,12 @@ const mutations = {
   },
   [types.SET_DISC](state, disc) {
     state.disc = disc
+  },
+  [types.SET_TOP_LIST](state, topList) {
+    state.topList = topList
+  },
+  [types.SET_SEARCH_HISTORY](state, history) {
+    state.searchHistory = Object.assign([], history)
   }
 }
 
