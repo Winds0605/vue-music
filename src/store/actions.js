@@ -3,7 +3,7 @@ import { playMode } from '../common/js/config'
 import { shuffle } from '../common/js/util'
 import { saveSearch, deleteSearch, clearSearch } from '../common/js/cache'
 
-function findIndex(list, song) {
+function findIndex (list, song) {
   return list.findIndex((item) => {
     return item.id === song.id
   })
@@ -23,8 +23,6 @@ export const selectPlay = function ({ commit, state }, { list, index }) {
   } else {
     commit(types.SET_PLAYLIST, list)
   }
-  console.log(list)
-  console.log(index)
   commit(types.SET_CURRENT_INDEX, index)
   commit(types.SET_FULL_SCREEN, true)
   commit(types.SET_PLAYING_STATE, true)

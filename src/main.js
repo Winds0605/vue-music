@@ -12,8 +12,8 @@ import './common/stylus/index.styl'
 
 fastclcik.attach(document.body)
 
-Vue.use(VueLazyLoad,{
-  loading:require('./common/image/loader.png')
+Vue.use(VueLazyLoad, {
+  loading: require('./common/image/loader.png')
 })
 
 /* eslint-disable no-new */

@@ -6,13 +6,14 @@
 
 <script type="text/ecmascript-6">
 import MusicList from "../../components/music-list/music-list";
-import { getSongList } from "../../api/recommend";
+import { getSongList } from "../../api/song";
 import { mapGetters } from "vuex";
-import { ERR_OK } from "../../api/config";
-import { createSongTwo } from "../../common/js/song";
+import { createSong } from "../../common/js/song";
+
+const ERR_OK = 0
 
 export default {
-  data() {
+  data () {
     return {
       songs: []
     };
@@ -21,30 +22,31 @@ export default {
     MusicList
   },
   computed: {
-    title() {
-      return this.disc.dissname;
+    title () {
+      return this.disc.name;
     },
-    bgImage() {
-      return this.disc.imgurl;
+    bgImage () {
+      return this.disc.picUrl;
     },
     ...mapGetters(["disc"])
   },
-  created() {
+  created () {
     this._getSongList();
   },
   methods: {
-    _getSongList() {
-      getSongList(this.disc.dissid).then(res => {
-        if (res.code == ERR_OK) {
-          this.songs = this._normalizeSongs(res.cdlist[0].songlist);
-        }
-      });
+    async _getSongList () {
+      try {
+        const result = await getSongList(this.disc.id)
+        this.songs = this._normalizeSongs(result.data.playlist.tracks)
+      } catch (error) {
+        throw error
+      }
     },
-    _normalizeSongs(list) {
+    _normalizeSongs (list) {
       let ret = [];
       list.forEach(musicData => {
-        if (musicData.mid && musicData.album.mid) {
-          createSongTwo(musicData).then(res => {
+        if (musicData.id && musicData.al.id) {
+          createSong(musicData).then(res => {
             ret.push(res);
           });
         }

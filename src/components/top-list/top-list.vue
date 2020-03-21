@@ -8,11 +8,12 @@
 import MusicList from "../../components/music-list/music-list";
 import { mapGetters } from "vuex";
 import { getMusicList } from "../../api/rank";
-import { ERR_OK } from "../../api/config";
 import { createSong } from "../../common/js/song";
 
+const ERR_OK = 0
+
 export default {
-  data() {
+  data () {
     return {
       songs: [],
       rank: true
@@ -22,10 +23,10 @@ export default {
     MusicList
   },
   computed: {
-    title() {
+    title () {
       return this.topList.topTitle;
     },
-    bgImage() {
+    bgImage () {
       if (this.songs.length) {
         return this.songs[0].image;
       }
@@ -33,27 +34,33 @@ export default {
     },
     ...mapGetters(["topList"])
   },
-  created() {
+  created () {
     this._getMusicList();
   },
   methods: {
-    _getMusicList() {
+    async _getMusicList () {
       if (!this.topList.id) {
         this.$router.push("/rank");
         return;
       }
-      getMusicList(this.topList.id).then(res => {
-        if (res.code === ERR_OK) {
-          this.songs = this._normalizeSongs(res.songlist);
-        }
-      });
+      try {
+        const result = await getMusicList(this.topList.name)
+        this.songs = this._normalizeSongs(result.data.playlist.tracks);
+      } catch (error) {
+        throw error
+      }
+
+      // getMusicList(this.topList.id).then(res => {
+      //   if (res.code === ERR_OK) {
+      //     this.songs = this._normalizeSongs(res.songlist);
+      //   }
+      // });
     },
-    _normalizeSongs(list) {
+    _normalizeSongs (list) {
       let ret = [];
       list.forEach(item => {
-        const musicData = item.data;
-        if (musicData.songid && musicData.albumid) {
-          createSong(musicData).then(res => {
+        if (item.id && item.al.id) {
+          createSong(item).then(res => {
             ret.push(res);
           });
         }

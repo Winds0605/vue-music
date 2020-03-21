@@ -27,20 +27,20 @@ export default {
     }
   },
   methods: {
-    selectItem(item, index) {
+    selectItem (item, index) {
       this.$emit("select", item, index);
     },
-    getDesc(song) {
+    getDesc (song) {
       return `${song.singer} - ${song.album}`;
     },
-    getRankCls(index) {
+    getRankCls (index) {
       if (index <= 2) {
         return `icon icon${index}`;
       } else {
         return "text";
       }
     },
-    getRankText(index) {
+    getRankText (index) {
       if (index > 2) {
         return index + 1;
       }

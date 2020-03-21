@@ -7,46 +7,48 @@
 
 <script type="text/ecmascript-6">
 import { getSingerList } from "../../api/singer";
-import { ERR_OK } from "../../api/config";
 import Singer from "../../common/js/singer";
 import ListView from "../../base/listview/listview";
 import { mapMutations } from "vuex";
+import pinyin from 'tiny-pinyin'
 import { playlisthMixin } from "../../common/js/mixin";
 
 const HOT_NAME = "热门";
 const HOT_SINGER_LEN = 10;
+const ERR_OK = 0
 
 export default {
   mixins: [playlisthMixin],
-  data() {
+  data () {
     return {
       singers: []
     };
   },
-  created() {
+  created () {
     this._getSingerList();
   },
   methods: {
-    handlePlaylist(playlist) {
+    handlePlaylist (playlist) {
       const bottom = Object.keys(playlist).length > 0 ? "60px" : "";
       this.$refs.singer.style.bottom = bottom;
       this.$refs.list.refresh();
     },
-    selectSinger(singer) {
+    selectSinger (singer) {
       this.$router.push({
         path: `/singer/${singer.id}`
       });
       this.setSinger(singer);
     },
-    _getSingerList() {
+    async _getSingerList () {
       //获取歌手数据
-      getSingerList().then(res => {
-        if (res.code === ERR_OK) {
-          this.singers = this._normalizeSinger(res.data.list);
-        }
-      });
+      try {
+        const result = await getSingerList(50)
+        this.singers = this._normalizeSinger(result.data.artists);
+      } catch (error) {
+        throw error
+      }
     },
-    _normalizeSinger(list) {
+    _normalizeSinger (list) {
       let map = {
         hot: {
           title: HOT_NAME,
@@ -60,28 +62,31 @@ export default {
         if (index < HOT_SINGER_LEN) {
           map.hot.items.push(
             new Singer({
-              name: item.Fsinger_name,
-              id: item.Fsinger_mid
+              name: item.name,
+              id: item.id,
+              avatar: item.picUrl
             })
           );
         }
 
         //将歌手首字母字段和歌手数据存入map的key数组中
-        const key = item.Findex;
-        if (!map[key]) {
-          map[key] = {
-            title: key,
-            items: []
-          };
+        if (pinyin.isSupported()) {
+          const key = pinyin.convertToPinyin(item.name.charAt(0)).charAt(0)
+          if (!map[key]) {
+            map[key] = {
+              title: key,
+              items: []
+            };
+          }
+          //将歌手数据存入对应的首字母数组中
+          map[key].items.push(
+            new Singer({
+              name: item.name,
+              id: item.id,
+              avatar: item.picUrl
+            })
+          );
         }
-
-        //将歌手数据存入对应的首字母数组中
-        map[key].items.push(
-          new Singer({
-            name: item.Fsinger_name,
-            id: item.Fsinger_mid
-          })
-        );
       });
 
       //定义两个数组分别存热门歌手和其他歌手

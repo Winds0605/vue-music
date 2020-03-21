@@ -7,47 +7,47 @@
 <script type="text/ecmascript-6">
 import { mapGetters } from "vuex";
 import { getSingerList, getSingerDetail } from "../../api/singer";
-import { ERR_OK } from "../../api/config";
 import { createSong } from "../../common/js/song.js";
 import MusicList from "../music-list/music-list";
 
+const ERR_OK = 0
+
 export default {
-  data() {
+  data () {
     return {
       songs: []
     };
   },
   computed: {
-    title() {
+    title () {
       return this.singer.name;
     },
-    bgImage() {
+    bgImage () {
       return this.singer.avatar;
     },
     ...mapGetters(["singer"])
   },
-  created() {
+  created () {
     this._getDetail();
   },
   methods: {
-    _getDetail() {
+    async _getDetail () {
       if (!this.singer.id) {
         this.$router.push("/singer");
         return;
       }
-      getSingerDetail(this.singer.id).then(res => {
-        if (res.code === ERR_OK) {
-          this.songs = this._normalizeSongs(res.data.list);
-        }
-      });
+      try {
+        const result = await getSingerDetail(this.singer.id)
+        this.songs = this._normalizeSongs(result.data.hotSongs);
+      } catch (error) {
+        throw (error)
+      }
     },
-    _normalizeSongs(list) {
+    _normalizeSongs (list) {
       let ret = [];
       list.forEach(item => {
-        let { musicData } = item;
-        if (musicData.songid && musicData.albummid) {
-          // ret.push(createSong(musicData));
-          createSong(musicData).then(res => {
+        if (item.id && item.al.id) {
+          createSong(item).then(res => {
             ret.push(res);
           });
         }

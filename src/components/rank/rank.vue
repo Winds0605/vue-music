@@ -4,15 +4,22 @@
       <ul>
         <li class="item" v-for="item in topList" :key="item.id" @click="selectItem(item)">
           <div class="icon">
-            <img src width="100" height="100" v-lazy="item.picUrl" />
+            <img src width="100" height="100" v-lazy="item.coverImgUrl" />
           </div>
           <ul class="songlist">
-            <li class="song" v-for="(song,index) in item.songList">
+            <li class="song" v-for="(song,index) in item.tracks">
               <span>{{index + 1}}</span>
-              <span>{{song.songname}}-{{song.singername}}</span>
+              <span>{{song.second}}-{{song.first}}</span>
             </li>
           </ul>
         </li>
+        <div class="other">
+          <li class="item" v-for="item in other" :key="item.id" @click="selectItem(item)">
+            <div class="icon">
+              <img src width="100" height="100" v-lazy="item.coverImgUrl" />
+            </div>
+          </li>
+        </div>
       </ul>
       <div class="loading-container" v-show="!topList.length">
         <loading></loading>
@@ -24,36 +31,40 @@
 
 <script type="text/ecmascript-6">
 import { getTopList } from "../../api/rank";
-import { ERR_OK } from "../../api/config";
 import Scroll from "../../base/scroll/scroll";
 import Loading from "../../base/loading/loading";
 import { playlisthMixin } from "../../common/js/mixin";
 import { mapMutations } from "vuex";
 
+const ERR_OK = 0
+
 export default {
   mixins: [playlisthMixin],
-  data() {
+  data () {
     return {
-      topList: []
+      topList: [],
+      other: []
     };
   },
-  created() {
+  created () {
     this._getTopList();
   },
   methods: {
-    _getTopList() {
-      getTopList().then(res => {
-        if (res.code === ERR_OK) {
-          this.topList = res.data.topList;
-        }
-      });
+    async _getTopList () {
+      try {
+        const result = await getTopList()
+        this.topList = result.data.list.slice(0, 4)
+        this.other = result.data.list.slice(4)
+      } catch (error) {
+        throw error
+      }
     },
-    handlePlaylist(playlist) {
+    handlePlaylist (playlist) {
       const bottom = playlist.length != 0 ? "60px" : "";
       this.$refs.rank.style.bottom = bottom;
       this.$refs.toplist.refresh();
     },
-    selectItem(item) {
+    selectItem (item) {
       this.$router.push({
         path: `/rank/${item.id}`
       });
@@ -117,6 +128,12 @@ export default {
           line-height: 26px;
         }
       }
+    }
+
+    .other {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
     }
 
     .loading-container {

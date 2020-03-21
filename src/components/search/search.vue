@@ -9,8 +9,13 @@
           <div class="hot-key">
             <h1 class="title">热门搜索</h1>
             <ul>
-              <li class="item" v-for="item in hotKey" :key="item.n" @click="addQuery(item.k)">
-                <span>{{item.k}}</span>
+              <li
+                class="item"
+                v-for="item in hotKey"
+                :key="item.result"
+                @click="addQuery(item.searchWord)"
+              >
+                <span>{{item.searchWord}}</span>
               </li>
             </ul>
           </div>
@@ -36,7 +41,6 @@
 <script type="text/ecmascript-6">
 import SearchBox from "../../base/search-box/search-box";
 import { getHotKey } from "../../api/search";
-import { ERR_OK } from "../../api/config";
 import Suggest from "../../components/suggest/suggest";
 import SearchList from "../../base/search-list/search-list";
 import Confirm from "../../base/confirm/confirm";
@@ -44,42 +48,46 @@ import Scroll from "../../base/scroll/scroll";
 import { mapActions, mapGetters } from "vuex";
 import { playlisthMixin } from "../../common/js/mixin";
 
+const ERR_OK = 0
+
 export default {
   mixins: [playlisthMixin],
-  data() {
+  data () {
     return {
       hotKey: [],
       query: ""
     };
   },
   methods: {
-    handlePlaylist(playlist) {
+    handlePlaylist (playlist) {
       const bottom = playlist.length > 0 ? "60px" : "";
       this.$refs.shortcutWrapper.style.bottom = bottom;
       this.$refs.shortcut.refresh();
       this.$refs.searchResult.style.bottom = bottom;
       this.$refs.suggest.refresh();
     },
-    _getHotKey() {
-      getHotKey().then(res => {
-        if (res.code === ERR_OK) {
-          this.hotKey = res.data.hotkey.slice(0, 10);
-        }
-      });
+    async _getHotKey () {
+      try {
+        const result = await getHotKey()
+        this.hotKey = result.data.data
+      } catch (error) {
+        throw error
+      }
     },
-    addQuery(query) {
+    addQuery (query) {
+      console.log(query)
       this.$refs.searchBox.setQuery(query);
     },
-    onQueryChange(query) {
+    onQueryChange (query) {
       this.query = query;
     },
-    blurInput() {
+    blurInput () {
       this.$refs.searchBox.blur();
     },
-    saveSearch() {
+    saveSearch () {
       this.saveSearchHistory(this.query);
     },
-    showConfirm() {
+    showConfirm () {
       this.$refs.confirm.show();
     },
     ...mapActions([
@@ -89,7 +97,7 @@ export default {
     ])
   },
   watch: {
-    query(newQuery) {
+    query (newQuery) {
       if (!newQuery) {
         setTimeout(() => {
           this.$refs.shortcut.refresh();
@@ -105,12 +113,12 @@ export default {
     Scroll
   },
   computed: {
-    shortcut() {
+    shortcut () {
       return this.hotKey.concat(this.searchHistory);
     },
     ...mapGetters(["searchHistory"])
   },
-  created() {
+  created () {
     this._getHotKey();
   }
 };

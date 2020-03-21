@@ -58,7 +58,7 @@
             <div class="progress-bar-wrapper">
               <progress-bar :percent="percent" @percentChange="onProgressBarChange"></progress-bar>
             </div>
-            <span class="time time-r">{{format(currentSong.duration)}}</span>
+            <span class="time time-r">{{format(duration)}}</span>
           </div>
           <div class="operators">
             <div class="icon i-left" @click="changeMode">
@@ -101,6 +101,7 @@
     </transition>
     <audio
       ref="audio"
+      id="audioPlay"
       :src="currentSong.url"
       @canplay="ready"
       @error="error"
@@ -114,6 +115,7 @@
 import { mapGetters, mapMutations } from "vuex";
 import animations from "create-keyframe-animation";
 import { prefixStyle } from "../../common/js/dom";
+import { getLyric } from '../../api/song'
 import ProgressBar from "../../base/progress-bar/progress-bar.vue";
 import ProgressCircle from "../../base/progress-circle/progress-circle";
 import { playMode } from "../../common/js/config";
@@ -125,8 +127,9 @@ const transform = prefixStyle("transform");
 const transitionDuration = prefixStyle("transitionDuration");
 
 export default {
-  data() {
+  data () {
     return {
+      duration: 0,
       songReady: false,
       currentTime: 0,
       radius: 32,
@@ -136,36 +139,34 @@ export default {
       playingLyric: ""
     };
   },
-  created() {
+  created () {
     this.touch = {};
   },
-  // https://y.gtimg.cn/music/photo_new/T002R300x300M000004AAnu71BDSIS.jpg?max_age=2592000
-  // https://y.gtimg.cn/music/photo_new/T002R300x300M000undefined.jpg?max_age=259200
   computed: {
-    cdCls() {
+    cdCls () {
       return this.playing ? "play" : "play pause";
     },
-    playIcon() {
+    playIcon () {
       return this.playing ? "icon-pause" : "icon-play";
     },
-    miniIcon() {
+    miniIcon () {
       return this.playing ? "icon-pause-mini" : "icon-play-mini";
     },
-    iconMode() {
+    iconMode () {
       return this.mode === playMode.sequence
         ? "icon-sequence"
         : this.mode === playMode.loop
-        ? "icon-loop"
-        : "icon-random";
+          ? "icon-loop"
+          : "icon-random";
     },
-    songListLength() {
+    songListLength () {
       return Object.keys(this.playlist).length;
     },
-    disableCls() {
+    disableCls () {
       return this.songReady ? "" : "disable";
     },
-    percent() {
-      return this.currentTime / this.currentSong.duration;
+    percent () {
+      return this.currentTime / this.duration;
     },
     ...mapGetters([
       "fullScreen",
@@ -178,7 +179,7 @@ export default {
     ])
   },
   methods: {
-    next() {
+    next () {
       if (!this.songReady) {
         return;
       }
@@ -199,7 +200,7 @@ export default {
         : this.$refs.cd.classList.remove("play", "pause");
       this.songReady = false;
     },
-    prev() {
+    prev () {
       if (!this.songReady) {
         return;
       }
@@ -210,7 +211,6 @@ export default {
         if (index === -1) {
           index = this.songListLength - 1;
         }
-        console.log(this.songListLength);
         this.setCurrentIndex(index);
         if (!this.playing) {
           this.togglePlaying();
@@ -219,10 +219,9 @@ export default {
       this.playing
         ? this.$refs.cd.classList.remove("play")
         : this.$refs.cd.classList.remove("play", "pause");
-      console.log(this.sequenceList);
       this.songReady = false;
     },
-    togglePlaying() {
+    togglePlaying () {
       if (!this.songReady) {
         return;
       }
@@ -231,34 +230,35 @@ export default {
         this.currentLyric.togglePlay();
       }
     },
-    ready() {
+    ready () {
       this.songReady = true;
       this.$refs.cd.classList.add("play");
+      this.duration = this.$refs.audio.duration
     },
-    error() {
+    error () {
       this.songReady = true;
     },
-    end() {
+    end () {
       if (this.mode === playMode.loop) {
         this.loop();
       } else {
         this.next();
       }
     },
-    loop() {
+    loop () {
       this.$refs.audio.currentTime = 0;
       this.$refs.audio.play();
       if (this.currentLyric) {
         this.currentLyric.seek();
       }
     },
-    back() {
+    back () {
       this.setFullScreen(false);
     },
-    open() {
+    open () {
       this.setFullScreen(true);
     },
-    enter(el, done) {
+    enter (el, done) {
       const { x, y, scale } = this._getPosAndScale();
 
       let animation = {
@@ -282,11 +282,11 @@ export default {
       });
       animations.runAnimation(this.$refs.cdWrapper, "move", done);
     },
-    afterEnter() {
+    afterEnter () {
       animations.unregisterAnimation("move");
       this.$refs.cdWrapper.style.animation = "";
     },
-    leave(el, done) {
+    leave (el, done) {
       this.$refs.cdWrapper.style.transition = "all 0.4s";
       const { x, y, scale } = this._getPosAndScale();
       this.$refs.cdWrapper.style[
@@ -294,15 +294,15 @@ export default {
       ] = `translate3d(${x}px,${y}px,0) scale(${scale})`;
       this.$refs.cdWrapper.addEventListener("transitionend", done);
     },
-    afterLeave() {
+    afterLeave () {
       this.$refs.cdWrapper.style.transition = "";
       this.$refs.cdWrapper.style[transform] = "";
     },
-    updateTime(e) {
+    updateTime (e) {
       // 音频标签有currentTime属性
       this.currentTime = e.target.currentTime;
     },
-    format(interval) {
+    format (interval) {
       // 向下取整 相当于调用Math.floor
       interval = interval | 0;
       const minute = (interval / 60) | 0;
@@ -312,9 +312,9 @@ export default {
       // const second = this._pad(interval % 60);
       return `${minute < 10 ? "0" + minute : minute}:${
         second < 10 ? "0" + second : second
-      }`;
+        }`;
     },
-    changeMode() {
+    changeMode () {
       const mode = (this.mode + 1) % 3;
       this.setPlayMode(mode);
       let list = null;
@@ -326,7 +326,7 @@ export default {
       this.resetCurrentIndex(list);
       this.setPlaylist(list);
     },
-    resetCurrentIndex(list) {
+    resetCurrentIndex (list) {
       let { keys, values, entries } = Object;
       let arr = [];
       for (let key of values(list)) {
@@ -337,7 +337,7 @@ export default {
       });
       this.setCurrentIndex(index);
     },
-    _pad(num, n = 2) {
+    _pad (num, n = 2) {
       let len = num.toString().length;
       while (len < n) {
         num = "0" + num;
@@ -345,8 +345,8 @@ export default {
       }
       return num;
     },
-    onProgressBarChange(percent) {
-      const currentTime = this.currentSong.duration * percent;
+    onProgressBarChange (percent) {
+      const currentTime = this.duration * percent;
       this.$refs.audio.currentTime = currentTime;
       if (!this.playing) {
         this.togglePlaying();
@@ -355,7 +355,7 @@ export default {
         this.currentLyric.seek(currentTime * 1000);
       }
     },
-    _getPosAndScale() {
+    _getPosAndScale () {
       const targetWidth = 40;
       const paddingLeft = 40;
       const paddingBottom = 30;
@@ -370,26 +370,19 @@ export default {
         scale
       };
     },
-    getLyric() {
-      this.currentSong
-        .getLyric()
-        .then(lyric => {
-          this.currentLyric = new Lyric(lyric, this.handleLyric);
-          if (this.playing) {
-            this.currentLyric.play();
-            setTimeout(() => {
-              this.currentLyric.seek(this.$refs.audio.currentTime * 1000);
-              console.log("lyric reset");
-            }, 500);
-          }
-        })
-        .catch(() => {
-          this.currentLyric = null;
-          this.playingLyric = "";
-          this.currentLineNum = 0;
-        });
+    async _getLyric () {
+      try {
+        const result = await getLyric(this.currentSong.id)
+        this.currentLyric = new Lyric(result.data.lrc.lyric, this.handleLyric);
+        if (this.playing) {
+          this.currentLyric.play();
+          this.currentLyric.seek(this.$refs.audio.currentTime * 1000);
+        }
+      } catch (error) {
+        throw error
+      }
     },
-    handleLyric({ lineNum, txt }) {
+    handleLyric ({ lineNum, txt }) {
       this.currentLineNum = lineNum;
       if (lineNum > 5) {
         let lineEl = this.$refs.lyricLine[lineNum - 5];
@@ -399,13 +392,13 @@ export default {
       }
       this.playingLyric = txt;
     },
-    middleTouchStart(e) {
+    middleTouchStart (e) {
       this.touch.initiated = true;
       const touch = e.touches[0];
       this.touch.startX = touch.pageX;
       this.touch.startY = touch.pageY;
     },
-    middleTouchMove(e) {
+    middleTouchMove (e) {
       if (!this.touch.initiated) {
         return;
       }
@@ -428,7 +421,7 @@ export default {
       this.$refs.middleL.style.opacity = 1 - this.touch.percent;
       this.$refs.middleL.style[transitionDuration] = 0;
     },
-    middleTouchEnd() {
+    middleTouchEnd () {
       let offsetWidth;
       let opacity;
       if (this.currentShow === "cd") {
@@ -467,7 +460,7 @@ export default {
     })
   },
   watch: {
-    currentSong(newSong, oldSong) {
+    currentSong (newSong, oldSong) {
       if (newSong.id === oldSong.id) {
         return;
       }
@@ -476,10 +469,10 @@ export default {
       }
       setTimeout(() => {
         this.$refs.audio.play();
-        this.getLyric();
-      }, 1000);
+        this._getLyric();
+      }, 500);
     },
-    playing(newPlaying) {
+    playing (newPlaying) {
       const audio = this.$refs.audio;
       this.$nextTick(() => {
         newPlaying ? audio.play() : audio.pause();

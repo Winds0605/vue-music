@@ -4,9 +4,9 @@
       <div>
         <div v-if="recommends.length" class="slider-wrapper">
           <slider>
-            <div v-for="item in recommends" :key="item.id">
-              <a :href="item.linkUrl">
-                <img class="needsclick" @load="loadImage" :src="item.picUrl" />
+            <div v-for="item in recommends" :key="item.bannerId">
+              <a :href="item.url">
+                <img class="needsclick" @load="loadImage" :src="item.pic" />
               </a>
             </div>
           </slider>
@@ -14,13 +14,12 @@
         <div class="recommend-list">
           <h1 class="list-title">热门歌单推荐</h1>
           <ul>
-            <li v-for="item in discList" :key="item.dissid" class="item" @click="selectItem(item)">
+            <li v-for="item in discList" :key="item.id" class="item" @click="selectItem(item)">
               <div class="icon">
-                <img width="60" height="60" v-lazy="item.imgurl" />
+                <img width="60" height="60" v-lazy="item.picUrl" />
               </div>
               <div class="text">
-                <div class="name" v-html="item.dissname"></div>
-                <!-- <div class="desc" v-html="item.description"></div> -->
+                <div class="name" v-html="item.name"></div>
               </div>
             </li>
           </ul>
@@ -39,47 +38,51 @@ import Loading from "../../base/loading/loading";
 import Scroll from "../../base/scroll/scroll";
 import Slider from "../../base/slider/slider";
 import { getRecommend, getDiscList } from "../../api/recommend";
-import { ERR_OK } from "../../api/config.js";
 import { playlisthMixin } from "../../common/js/mixin";
 import { mapMutations } from "vuex";
 
 export default {
   mixins: [playlisthMixin],
-  data() {
+  data () {
     return {
       recommends: [],
       discList: []
     };
   },
-  created() {
+  created () {
     this._getRecommend();
     this._getDiscList();
   },
   methods: {
-    handlePlaylist(playlist) {
+    handlePlaylist (playlist) {
       const bottom = Object.keys(playlist).length > 0 ? "60px" : "";
       this.$refs.recommend.style.bottom = bottom;
       this.$refs.scroll.refresh();
     },
-    selectItem(item) {
+    selectItem (item) {
       this.$router.push({
-        path: `/recommend/${item.dissid}`
+        path: `/recommend/${item.id}`
       });
       this.setDisc(item);
     },
-    _getRecommend() {
-      getRecommend().then(res => {
-        if (res.code === ERR_OK) {
-          this.recommends = res.data.slider;
-        }
-      });
+    async _getRecommend () {
+      try {
+        let result = await getRecommend()
+        this.recommends = result.data.banners
+      } catch (error) {
+        throw error
+      }
     },
-    _getDiscList() {
-      getDiscList().then(res => {
-        this.discList = res.data.list;
-      });
+
+    async _getDiscList () {
+      try {
+        let result = await getDiscList()
+        this.discList = result.data.result
+      } catch (error) {
+        throw error
+      }
     },
-    loadImage() {
+    loadImage () {
       if (!this.checkLoaded) {
         this.$refs.scroll.refresh();
         this.checkLoaded = true;

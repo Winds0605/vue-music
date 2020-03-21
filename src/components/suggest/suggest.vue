@@ -3,11 +3,12 @@
     class="suggest"
     :data="result"
     :pullup="pullup"
-    @scrollToEnd="searchMore"
     ref="suggest"
     :beforeScroll="beforeScroll"
     @beforeScroll="listScroll"
+    @scrollToEnd="searchMore"
   >
+    <!--  @scrollToEnd="searchMore" -->
     <ul class="suggest-list">
       <li class="suggest-item" v-for="item in result" @click="selectItem(item)">
         <div class="icon">
@@ -17,6 +18,7 @@
           <p class="text" v-html="getDisplayName(item)"></p>
         </div>
       </li>
+      <button class="more" v-show="showBtn" @click="more">{{tip}}</button>
       <loading v-show="hasMore"></loading>
     </ul>
     <div class="no-result-wrapper" v-show="!hasMore && !result.length">
@@ -27,7 +29,7 @@
 
 <script>
 import { search } from "../../api/search";
-import { ERR_OK } from "../../api/config";
+const ERR_OK = 0
 import { filterSinger } from "../../common/js/song";
 import Scroll from "../../base/scroll/scroll";
 import Loading from "../../base/loading/loading";
@@ -37,7 +39,9 @@ import { createSong } from "../../common/js/song";
 import NoResult from "../../base/no-result/no-result";
 
 const TYPE_SINGER = "singer";
-const perpage = 20;
+const SEARCH_ALL_TYPE = 1018
+const SEARCH_SONG = 1
+let PAGENUM = 15
 
 export default {
   props: {
@@ -50,91 +54,122 @@ export default {
       default: true
     }
   },
-  data() {
+  data () {
     return {
       page: 1,
       result: [],
       pullup: true,
-      hasMore: true,
-      beforeScroll: true
+      hasMore: false,
+      beforeScroll: true,
+      tip: '',
+      pageNum: 15,
+      showBtn: false,
     };
   },
   methods: {
-    search() {
+    _search () {
       this.page = 1;
-      this.hasMore = true;
+      this.pageNum = 15
       this.$refs.suggest.scrollTo(0, 0);
-      search(this.query, this.page, this.showSinger, perpage).then(res => {
-        if (res.code === ERR_OK) {
-          if (res.code === ERR_OK) {
-            this.result = this._getResult(res.data);
-            this._checkMore(res.data);
-            console.log(this.result);
-          }
+      search(this.query, this.pageNum, this.page, SEARCH_ALL_TYPE).then(res => {
+        this.result = this._getResult(res.data.result);
+        if (res.data.result.song.moreText) {
+          this.tip = res.data.result.song.moreText
+          this.showBtn = true
         }
       });
     },
-    searchMore() {
+    more (e) {
+      if (e.target.innerText.indexOf('单曲')) {
+        search(this.query, this.pageNum, this.page, SEARCH_SONG).then(res => {
+          this.result = this.getSongResult(res.data.result);
+          this.showBtn = false
+          this._checkMore(res.data.result.songCount);
+        })
+      }
+    },
+    searchMore () {
       if (!this.hasMore) {
         return;
       }
-      this.page++;
-      search(this.query, this.page, this.showSinger, perpage).then(res => {
-        if (res.code === ERR_OK) {
-          if (res.code === ERR_OK) {
-            this.result = this.result.concat(this._getResult(res.data));
-            this._checkMore(res.data);
-          }
-        }
+      this.pageNum += 15;
+      search(this.query, this.pageNum, this.page, SEARCH_SONG).then(res => {
+        this.result = this.getSongResult(res.data.result);
+        this._checkMore(res.data.result.songCount);
       });
     },
-    _checkMore(data) {
-      const song = data.song;
-      if (
-        !song.list.length ||
-        song.curnum + song.curpage * perpage > song.totalnum
-      ) {
+    _checkMore (songCount) {
+      if (songCount > this.result.length) {
+        this.hasMore = true;
+      } else {
         this.hasMore = false;
       }
+      // const song = data.song;
+      // if (
+      //   !song.songs.length ||
+      //   !song.more
+      // ) {
+      //   this.hasMore = false;
+      // }
+      // console.log(this.hasMore)
     },
-    getIconCls(item) {
+    getIconCls (item) {
       if (item.type === TYPE_SINGER) {
         return "icon-mine";
       } else {
         return "icon-music";
       }
     },
-    getDisplayName(item) {
+    getDisplayName (item) {
       if (item.type === TYPE_SINGER) {
-        return item.singername;
+        return item.name;
       } else {
-        return `${item.songname}-${filterSinger(item.singer)}`;
+        return `${item.name}-${filterSinger(item.ar)}`;
       }
     },
-    _getResult(data) {
+    getSongResult (data) {
+      let ret = []
+      if (data.songs) {
+        data.songs.forEach(value => {
+          ret.push({
+            name: value.name,
+            ar: value.artists,
+            id: value.id
+          })
+        })
+      }
+      return ret
+    },
+    _getResult (data, flag = true) {
       let ret = [];
-      if (data.zhida && data.zhida.singerid) {
-        ret.push({ ...data.zhida, ...{ type: TYPE_SINGER } });
+      if (data.artist && flag) {
+        data.artist.artists.forEach(value => {
+          ret.push({
+            ...value,
+            type: TYPE_SINGER
+          })
+        })
       }
       if (data.song) {
-        ret = ret.concat(data.song.list);
+        ret = ret.concat(data.song.songs);
       }
       return ret;
     },
-    _normalizeSongs(list) {
+    _normalizeSongs (list) {
       let ret = [];
       list.forEach(element => {
-        if (element.songid && element) {
+        if (element.id && element) {
           ret.push(element);
         }
       });
       return ret;
     },
-    selectItem(item) {
+    selectItem (item) {
       if (item.type === TYPE_SINGER) {
         const singer = new Singer({
-          id: item.singermid,
-          name: item.singername
+          id: item.id,
+          name: item.name,
+          avatar: item.picUrl
         });
         this.$router.push({
           path: `/search/${singer.id}`
@@ -147,10 +182,10 @@ export default {
       }
       this.$emit("select");
     },
-    refresh() {
+    refresh () {
       this.$refs.suggest.refresh();
     },
-    listScroll() {
+    listScroll () {
       this.$emit("listScroll");
     },
     ...mapMutations({
@@ -159,8 +194,8 @@ export default {
     ...mapActions(["insertSong"])
   },
   watch: {
-    query() {
-      this.search();
+    query (val) {
+      this._search();
     }
   },
   components: {
@@ -217,5 +252,17 @@ export default {
     top: 50%;
     transform: translateY(-50%);
   }
+}
+
+.more {
+  border-radius: 10px;
+  color: #616161;
+  background-color: #222222;
+  border: 1px solid #616161;
+  margin: 0 auto;
+  position: relative;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
 }
 </style>

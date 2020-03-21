@@ -47,7 +47,7 @@ const backrop = prefixStyle("backdrop-filter");
 
 export default {
   mixins: [playlisthMixin],
-  data() {
+  data () {
     return {
       scrollY: 0
     };
@@ -71,8 +71,8 @@ export default {
     }
   },
   computed: {
-    bgStyle() {
-      return `background-image:url(${this.bgImage})`;
+    bgStyle () {
+      return `background-image:url(${this.bgImage});background-size: 100%;background-position: center;background-repeat: no-repeat;`;
     }
   },
   components: {
@@ -81,24 +81,24 @@ export default {
     Loading
   },
   methods: {
-    scroll(pos) {
+    scroll (pos) {
       this.scrollY = pos.y;
     },
-    back() {
+    back () {
       this.$router.back();
     },
-    selectItem(item, index) {
+    selectItem (item, index) {
       this.selectPlay({
         list: this.songs,
         index
       });
     },
-    random() {
+    random () {
       this.randomPlay({
         list: this.songs
       });
     },
-    handlePlaylist(playlist) {
+    handlePlaylist (playlist) {
       const bottom = Object.keys(playlist).length > 0 ? "60px" : "";
       this.$refs.list.$el.style.bottom = bottom;
       this.$refs.list.refresh();
@@ -106,7 +106,7 @@ export default {
     ...mapActions(["selectPlay", "randomPlay"])
   },
   watch: {
-    scrollY(newY) {
+    scrollY (newY) {
       let tranlateY = Math.max(this.minTranslateY, newY);
       let zIndex = 0;
       let scale = 1;
@@ -134,12 +134,12 @@ export default {
       this.$refs.bgImage.style[transform] = `scale(${scale})`;
     }
   },
-  mounted() {
+  mounted () {
     this.imageHeight = this.$refs.bgImage.clientHeight;
     this.minTranslateY = -this.imageHeight + RESERVED_HEIGHT;
     this.$refs.list.$el.style.top = `${this.imageHeight}px`;
   },
-  created() {
+  created () {
     this.probeType = 3;
     this.listenScroll = true;
   }
